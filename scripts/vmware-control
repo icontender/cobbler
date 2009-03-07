@@ -1,0 +1,296 @@
+#!/usr/bin/perl 
+#Author: Corey Osman corey@logicminds.biz
+#Website: http://www.logicminds.biz
+#Date: 1-27-09
+#Purpose: powers on/off a vm given a mac address
+#Additional: can also switch the portgroup 
+########################################################
+#This program is free software; you can redistribute it and/or modify
+#it under the terms of the GNU General Public License as published by
+#the Free Software Foundation; either version 2 of the License, or
+#(at your option) any later version.
+
+#This program is distributed in the hope that it will be useful,
+#but WITHOUT ANY WARRANTY; without even the implied warranty of
+#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#GNU General Public License for more details.
+
+#You should have received a copy of the GNU General Public License
+#along with this program; if not, write to the Free Software
+#Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+#02110-1301  USA
+########################################################
+# README
+# For help Please visit this page
+# http://fedorahosted.org/cobbler/wiki/VmwareIntegration
+
+# You will need to download the following toolkit and 
+# Install it on cobbler before this script will work
+# http://www.vmware.com/support/developer/viperltoolkit/
+
+# Supported VMware Version
+# VMware ESX/ESXi 3.x
+# VMware Virtual Center 2.x
+#--------------------------------
+# Not Tested
+# VMware Server 2.0
+# Note: you will need to provide --portnumber=8333 or whatever the 
+# https port is for you configuration
+
+
+# Todo: add setOSOption function
+
+use strict;
+use warnings;
+
+# Import runtime libraries
+# check to make sure libaries are installed
+eval
+{
+   require VMware::VIRuntime;
+   VMware::VIRuntime->import();
+   require VMware::VILib;
+   VMware::VILib->import();
+};
+if ($@){
+  die "VMware VI perl is not installed.\nPlease download at http://developer.vmware.com\nFor more info see https://fedorahosted.org/cobbler/wiki/VmwareIntegration\n"; 
+}
+
+# print "Please see this page for troubleshooting tips\n";
+# print "https://fedorahosted.org/cobbler/wiki/VmwareIntegration\n";
+
+
+my %opts = (
+   'vmname' => {
+      type => "=s",
+      help => "The name of the virtual machine",
+      required => 0,
+   }, 
+   'mac' => {
+      type => "=s",
+      help => "The mac address of the virtual machine",
+      required => 0,
+   },
+   'portgroup' => {
+      type => "=s",
+      help => "The portgroup you wish to change for kickstarting",
+      required => 0,
+   },
+   'operation' => {
+      type => "=s",
+      help => "values are on, off,prep, reset, test",
+      required => 0,
+   }
+
+);
+
+# VMware virtual ethernet card types
+my %text = (
+    VirtualE1000 => 'E1000',
+    VirtualPCNet32 =>  'PC Net 32',
+    VirtualVMXnet => 'vmx net');
+
+
+# Read and validate command-line parameters
+Opts::add_options(%opts);
+Opts::parse();
+Opts::validate();
+
+# Get any arguments passed in
+my $vm_name = Opts::get_option('vmname');
+my $mac = Opts::get_option('mac');
+my $portgroupname = Opts::get_option('portgroup');
+my $operation = Opts::get_option('operation');
+
+# change mac to lower case because vmware returns all lowercase mac addresses
+$mac = lc($mac);
+
+# change the operation to lowercase
+$operation = lc($operation);
+
+# Connect to the server and login
+Util::connect();
+
+# start Here
+my $vms = GetVm();
+my $foundvm = findVMbyMac($vms, $mac);
+
+
+# change the vlan if you need to 
+if ($portgroupname){
+     changevlan($foundvm,$portgroupname);
+}
+
+# power on the system
+if ($operation eq "on"){
+     powerON($foundvm);
+}
+
+# power off the system
+elsif ($operation eq "off"){
+     powerOFF($foundvm);
+}
+
+# reset the system
+# this will either poweron the system or reset it
+elsif ($operation eq "reset"){
+     resetvm($foundvm);
+}
+# test to make sure things are working
+elsif ($operation eq "test"){
+     printstuff($vms);
+}
+
+# Close server connection
+Util::disconnect();
+
+##############################################################################
+sub printstuff{
+   my $vmlist = shift;
+   my $vm = "";
+   foreach $vm (@$vmlist) {
+        my $vmmac = getmac($vm);
+        print $vm->name . " mac address =  " . $vmmac . " state =  " . $vm->runtime->powerState->val . " \n";
+   }
+}
+
+
+
+
+sub powerON{
+# requires mac address and list of vms (but these are global anyways)
+         my $vm = shift;
+	my $state = $vm->runtime->powerState->val;
+        if ($state eq "poweredOff"){
+        	 print "Powering on ...\n";
+        	 $vm->PowerOnVM();
+	}
+
+}
+
+sub powerOFF{
+# requires ddmac address and list of vms (but these are global anyways)
+        my $vm = shift;
+	my $state = $vm->runtime->powerState->val;
+	if ($state eq "poweredOn"){
+         	print "Powering off ...\n";
+        	 $vm->PowerOffVM();
+	}
+	 # this is not a shutdown but a complete "flip the switch" event
+
+}
+
+sub GetVm {
+   my $vmname = shift;
+   return Vim::find_entity_views(
+             view_type => 'VirtualMachine');
+          #   filter => {
+          #   'name' => $vmname }
+          #   );
+	  # Damn, it would be nice to filter by mac address, but we can't since 
+	  # having a network card is a enumerated device
+}
+
+sub findVMbyMac {
+# requires a list of vms and the mac address to search for
+
+   my $vms = shift;
+   my $mac = shift;
+   my $vm = "";
+   foreach $vm (@$vms) {
+        my $vmmac = getmac($vm);
+#        print $vmmac . " = " . $mac . "\n";
+   	if ($vmmac eq $mac){
+#        	print "Found " . $mac . " that belongs to " . $vm->name . "\n";
+		return $vm;
+	}
+   }
+}
+
+
+sub resetvm {
+# this will determine if the vm needs to be reset or powered on
+# this will detect if the vm is on or off by looking at the power state
+my $vm = shift;
+#print $vm->name . " ";
+if (! $vm){
+	print "VM with mac address " . $mac . " is not defined";
+}
+my $state = $vm->runtime->powerState->val;
+if ($state eq "poweredOff"){
+         print "Powering On ...\n";
+         $vm->PowerOnVM();
+}
+elsif ($state eq "poweredOn"){
+         print "Resetting ...\n";
+         $vm->ResetVM();
+}
+#  This will occur if its in a hibernated state
+else 
+         {print $state . "\n"}
+}
+
+sub getmac{
+my $vm = shift;
+#print $vm->name . " ";
+my $firstnic = "Network Adapter 1";
+my $devices = $vm->config->hardware->device;
+foreach my $dev (@$devices) {
+    next unless ($dev->isa ("VirtualEthernetCard"));
+    if ($dev->deviceInfo->label eq $firstnic){
+	return $dev->macAddress;
+    }
+	
+    }
+}
+#sub getnetworks{
+#  Have not been able to find the proper "managed entitiy name"
+#  This will enventually get all the available portgroups
+#   return Vim::find_entity_views(
+#             view_type => 'network');
+          #   filter => {
+          #   'name' => $vmname }
+          #   );
+#}
+
+#sub listnetworks{
+#	my $nets = getnetworks();
+#        foreach my $net (@$nets){
+#            print $net->name;
+#	}
+#}
+
+sub changevlan {
+# changes the vlan of the vm.  must be called via changevlan(vm, new port group name) 
+	my $vm = shift;
+        my $new_net_name = shift;
+        # my $new_net_name = "new port group";
+	my $net_name = "Network Adapter 1";
+        my $net_device = " ";
+        my $config_spec_operation = VirtualDeviceConfigSpecOperation->new('edit');
+	my $devices = $vm->config->hardware->device;
+        foreach my $device (@$devices){
+        	if ($device->deviceInfo->label eq $net_name){
+                	$net_device=$device;
+		}
+	}
+
+	if ($net_device){
+		$net_device->deviceInfo->summary( $new_net_name);
+		$net_device->backing->deviceName( $new_net_name);
+	}
+
+	my $vm_dev_spec = VirtualDeviceConfigSpec->new(
+         device => $net_device,
+         operation => $config_spec_operation
+	   );
+
+  	 my $vmSwitchspec = VirtualMachineConfigSpec->new(deviceChange => [ $vm_dev_spec ] );
+
+  	 eval{
+     		 $vm->ReconfigVM(spec => $vmSwitchspec);
+  	 };
+ 	  if ($@) { print "Reconfiguration failed.\n $@";}
+    	  else {print "Reconfig vSwitch OK.\n"; }
+}
+########################################################################################

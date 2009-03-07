@@ -163,6 +163,7 @@ class PowerTool:
             "virsh"      : os.path.join(powerdir,"power_virsh.template"),
             "integrity"  : os.path.join(powerdir,"power_integrity.template"),
             "wti"        : os.path.join(powerdir,"power_wti.template"),
+            "vmware"     : os.path.join(powerdir,"power_vmware.template"),
         }
 
         result = map.get(self.system.power_type, "")

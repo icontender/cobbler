@@ -142,6 +142,7 @@ if __name__ == "__main__":
                     "scripts/cobbler", 
                     "scripts/cobblerd", 
                     "scripts/cobbler-ext-nodes", 
+                    "scripts/vmware-control",
                 ],
                 data_files = [ 
                                 (modpython, ['scripts/index.py']),
@@ -224,6 +225,7 @@ if __name__ == "__main__":
                                 (powerpath, ['templates/power_lpar.template']),        
                                 (powerpath, ['templates/power_bladecenter.template']),
                                 (powerpath, ['templates/power_virsh.template']),        
+                                (powerpath, ['templates/power_vmware.template']),
 
                                 # templates for reporting
                                 (reppath,   ['templates/build_report_email.template']), 

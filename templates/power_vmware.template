@@ -1,0 +1,1 @@
+/usr/bin/vmware-control --server $power_address --username $power_user --password $power_pass --operation $power_mode --mac $interfaces['eth0'].get('mac_address') --portgroup "$power_id"

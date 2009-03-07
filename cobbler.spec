@@ -174,6 +174,7 @@ test "x$RPM_BUILD_ROOT" != "x" && rm -rf $RPM_BUILD_ROOT
 %{_bindir}/cobbler
 %{_bindir}/cobbler-ext-nodes
 %{_bindir}/cobblerd
+%{_bindir}/vmware-control
 
 %defattr(-,root,root)
 %dir /etc/cobbler

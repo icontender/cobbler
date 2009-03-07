@@ -231,6 +231,7 @@ omshell_bin: /usr/bin/omshell
 #    lpar
 #    bladecenter
 #    virsh
+#    vmware
 
 power_management_default_type: 'ipmitool'
 
