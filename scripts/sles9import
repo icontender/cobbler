@@ -1,0 +1,166 @@
+#!/bin/python
+#This script will setup the SLES9 web directory so you can install over the network with service packs integrated.
+from os import path
+import os
+import shutil
+import os.path
+import subprocess
+# Create Directory Structure
+
+class suse9importer:
+   importdir = ''
+   isolocation = ''
+   distroname = ''
+   isos = []
+   src = 'no'
+   distro_path
+
+   def _usage(self):
+       print 'sles9import --spname=sp4 ' +
+       '--importdir=/var/www/cobbler/ks_mirror ' + 
+       '--distro-name=sles9sp4-i386 --isolocation=/tmp/isos --includesrc=yes'
+       print "You must have your iso files in the same directory"
+
+   def getargs(self):
+      if len(sys.argv) >= 3:
+         for arg in sys.argv:
+            if arg.startswith('--importdir='):
+               self.importdir = arg.split('=')[1]
+               continue
+            if arg.startswith('--isolocation='):
+               self.isolocation = arg.split('=')[1]
+               continue
+            if arg.startswith('--distro-name='):
+               self.distroname = arg.split('=')[1]
+               continue
+            if arg.startswith('--includesrc='):
+               self.src = arg.split('=')[1].lower()
+               continue
+      else:
+         self._usage()
+
+   def findmedia(self):
+       # we will need to ask where the user is keeping the media
+      
+      if not path.exists(self.isolocation):
+         print 'Iso location does not exist, please rerun this script with the correct iso location'
+         exit(-1)
+      else:
+         for iso in os.listdir(self.isolocation):
+            if len(os.listdir(self.isolocation)) < 6:
+               print "The number of iso files should be at least six, are some iso files missing?"
+               print "Please check and rerun this script"
+               exit(-1)
+    
+            elif iso.lower().find('SLES-9-i386-RC5-CD1.iso'.lower()) !=-1:
+               self.copymedia(iso, path.join(self.distro_path, 'sles9', 'CD1'))
+            elif iso.lower().find('SLES-9-i386-RC5-CD2.iso'.lower()) !=-1:
+               self.copymedia(iso, path.join(self.distro_path, 'core9', 'CD1'))
+            elif iso.lower().find('SLES-9-i386-RC5-CD3.iso'.lower()) !=-1:
+              self.copymedia(iso, path.join(self.distro_path, 'core9', 'CD2'))
+            elif iso.lower().find('SLES-9-i386-RC5-CD4.iso'.lower()) !=-1:
+               self.copymedia(iso, path.join(self.distro_path, 'core9', 'CD3'))
+            elif iso.lower().find('SLES-9-i386-RC5-CD5.iso'.lower()) !=-1 and self.includesrc == 'yes' :
+               self.copymedia(iso, path.join(self.distro_path, 'core9', 'CD4'))
+            elif iso.lower().find('SLES-9-i386-RC5-CD6.iso'.lower()) !=-1 and self.includesrc == 'yes':
+               self.copymedia(iso, path.join(self.distro_path, 'core9', 'CD5'))
+            elif iso.lower().find('SLES-9-SP4-CD-i386-GM-CD1.iso'.lower()) !=-1:
+               self.copymedia(iso, path.join(self.distro_path, 'sles9sp4', 'CD1'))
+            elif iso.lower().find('SLES-9-SP4-CD-i386-GM-CD2.iso'.lower()) !=-1:
+               self.copymedia(iso, path.join(self.distro_path, 'sles9sp4', 'CD2'))
+            elif iso.lower().find('SLES-9-SP4-CD-i386-GM-CD3.iso'.lower()) !=-1 and self.includesrc == 'yes':
+               self.copymedia(iso, path.join(self.distro_path, 'sles9sp4', 'CD3'))
+            elif iso.lower().find('SLES-9-SP4-CD-i386-GM-CD4.iso'.lower()) !=-1 and self.includesrc == 'yes':
+               self.copymedia(iso, path.join(self.distro_path, 'sles9sp4', 'CD4'))
+
+      print self.isos
+      
+   def copymedia(self,isofile,cdpath):
+            
+      run_this('mount', ['-o loop', isofile, '/tmp/iso'])
+      run_this('rsync', ['-avz', '--progress', '/tmp/iso/', path.join(self.distro_path, cdpath, '/')])
+      run_this('umount', '/tmp/iso')    
+      
+   def run_this(self, cmd, args):
+
+          """
+          A simple wrapper around subprocess calls.
+          """
+
+          my_cmd = cmd % args
+          print _("- %s") % my_cmd
+          rc = sub_process.call(my_cmd,shell=True,close_fds=True)
+          if rc != 0:
+             print "Command failed"
+
+   def create_dir_structure(self):
+       sp = 'sles9' + 'sp4'
+       distro_name="SLES9-x86-SP4"
+       distro="SLES9-x86_64-SP4"
+       basedir='/var/www/cobbler/ks_mirror/'
+       self.distro_path = path.join(basedir, distro_name)
+       if not path.exists(self.distro_path):
+           os.mkdir(self.distro_path)
+           os.makekdirs(path.join(self.distro_path, 'sles9', 'CD1'))
+           os.makekdirs(path.join(self.distro_path, 'core9', 'CD1'))
+           os.makekdirs(path.join(self.distro_path, 'core9', 'CD2'))
+           os.makekdirs(path.join(self.distro_path, 'core9', 'CD3'))
+           os.makekdirs(path.join(self.distro_path, 'core9', 'CD4'))
+           os.makekdirs(path.join(self.distro_path, 'core9', 'CD5'))
+           os.makekdirs(path.join(self.distro_path, sp, 'CD1'))
+           os.makekdirs(path.join(self.distro_path, sp, 'CD2'))
+           os.makekdirs(path.join(self.distro_path, sp, 'CD3'))
+           os.makekdirs(path.join(self.distro_path, sp, 'CD4'))
+           os.makekdirs(path.join(self.distro_path, 'yast'))
+           os.makekdirs(path.join('/tmp/iso'))
+
+           # Create the symlinks
+           os.symlink(path.join(self.distro_path, 'sles9', 'CD1', 'content'), path.join(self.distro_path, 'content'))
+           os.symlink(path.join(self.distro_path, 'sles9', 'CD1', 'control.xml'), path.join(self.distro_path, 'control.xml'))
+           os.symlink(path.join(self.distro_path, 'sles9', 'CD1', 'media.1'), path.join(self.distro_path, 'media.1'))
+           os.symlink(path.join(self.distro_path, 'sles9', 'CD1', 'boot'), path.join(self.distro_path, 'boot'))
+           os.symlink(path.join(self.distro_path, sp, 'CD1', 'driverupdate'), path.join(self.distro_path, 'driverupdate'))
+           os.symlink(path.join(self.distro_path, sp, 'CD1', 'linux'), path.join(self.distro_path, 'linux'))
+
+           # Copy the media now
+           self.findmedia()
+
+           # Copy the new kernel/ramdisk files with updated drivers
+           shutil.copy2(path.join(self.distro_path, sp, 'CD1', 'boot', 'linux'),
+                        path.join(self.distro_path, 'sles9', 'CD1', 'boot', 'linux'))
+           shutil.copy2(path.join(self.distro_path, sp, 'CD1', 'boot', 'initrd'),
+                        path.join(self.distro_path, 'sles9', 'CD1', 'boot', 'initrd'))
+
+           # Create yast files
+           try:
+               try:
+                   instorder = open(path.join(self.distro_path, 'yast', 'instorder'), 'w')
+                   order = open(path.join(self.distro_path, 'yast', 'order'), 'w')
+
+                   instorder.writeline('/%s/CD1' % (sp))
+                   instorder.writeline('/sles9/CD1')
+                   instorder.writeline('/core9/CD1')
+
+                   order.writeline('/%s/CD1\t/%s/CD1' % (sp, sp))
+                   order.writeline('/sles9/CD1\t/sles9/CD1')
+                   order.writeline('/core9/CD1\t/core9/CD1')
+
+               except:
+                   print 'I cant write to the instorder/order files'
+           finally:
+               instorder.close()
+               order.close()
+
+#####################################
+########## Main ##########
+p = suse9importer()
+p.getargs()
+p.create_dir_structure()             
+        
+    
+        
+        
+
+
+
+

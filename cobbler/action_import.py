@@ -31,6 +31,7 @@ import glob
 import api
 import utils
 import shutil
+import re
 from utils import _
 
 import item_repo
@@ -108,11 +109,13 @@ class Importer:
        if self.os_version and not self.breed:
            raise CX(_("OS version can only be specified when a specific breed is selected"))
 
-       if self.breed and self.breed.lower() not in [ "redhat", "debian", "ubuntu", "windows" ]:
+       if self.breed and self.breed.lower() not in [ "redhat", "debian", "ubuntu", "windows", "suse" ]:
+
            raise CX(_("Supplied import breed is not supported"))
  
        # if --arch is supplied, make sure the user is not importing a path with a different
        # arch, which would just be silly.  
+       # if the user specifies --arch-i386 and name has (x86) the exception will get raised
 
        if self.arch:
            # append the arch path to the name if the arch is not already
@@ -267,15 +270,27 @@ class Importer:
                continue
 
            kdir = os.path.dirname(distro.kernel)   
+
            importer = import_factory(kdir,self.path,self.breed)
+
            if self.kickstart_file == None:
-               for rpm in importer.get_release_files():
+               # This is the new method to use, you must set ks file in the importer subclass
+               if importer.breed == 'suse':
+                   if importer.ksfile:
+                       profile.set_kickstart(importer.ksfile)
+                   if importer.comment:
+                      distro.set_comment(importer.comment)
+                   if importer.os_version:
+                      distro.set_os_version(importer.os_version)   
+                # This is the old method to use, since I didn't want to touch this yet
+               else:
+                  for rpm in importer.get_release_files():
                      # FIXME : This redhat specific check should go into the importer.find_release_files method
                      if rpm.find("notes") != -1:
-                         continue
+                        continue
                      results = importer.scan_pkg_filename(rpm)
                      if results is None:
-                         continue
+                        continue
                      (flavor, major, minor) = results
                      # print _("- finding default kickstart template for %(flavor)s %(major)s") % { "flavor" : flavor, "major" : major }
                      version , ks = importer.set_variance(flavor, major, minor, distro.arch)
@@ -286,7 +301,7 @@ class Importer:
                      distro.set_comment("%s.%s" % (version, int(minor)))
                      distro.set_os_version(version)
                      if ds is not None:
-                         distro.set_tree_build_time(ds)
+                        distro.set_tree_build_time(ds)
                      profile.set_kickstart(ks)
                      self.profiles.add(profile,save=True)
 
@@ -368,6 +383,9 @@ class Importer:
                print _("- descent into %s") % top
                if distro.breed in [ "debian" , "ubuntu" ]:
                    importer.process_repos( self , distro )
+               #elif distro.breed == 'suse':
+                  # Should suse be processing repos?
+                 # continue
                else:
                    # FIXME : The location of repo definition is known from breed
                    os.path.walk(top, self.repo_scanner, distro)
@@ -502,12 +520,26 @@ class Importer:
        This is an os.path.walk routine that finds distributions in the directory
        to be scanned and then creates them.
        """
+       # SLES9 has the possibility of having multiple kernels if a service pack is integrated into a DVD
+       # Of course this can only occur if the user made a DVD from the 9 CDs if originally came with
+       # We will want to only import the Service Pack kernel since it has the latest network drivers
+       # SLES10 is completely different and is searchable by normal standards
+       
+       # I think if we find multiple kernels we should break out and ask the user which one to use
+       # Going to skip SLES9 for now
 
        # FIXME: If there are more than one kernel or initrd image on the same directory,
        # results are unpredictable
 
        initrd = None
        kernel = None
+       
+       # keep everything lower case just in case 
+       # To search for new distros, add your ramdisk/kernel info here
+       d_ramdisk = [ 'initrd', 'ramdisk.image.gz' ]
+       d_kernel = [ 'linux', 'vmlinuz', 'kernel.img', 'initrd' ]
+
+       
 
        for x in fnames:
 
@@ -519,17 +551,29 @@ class Importer:
                   continue
               print "- following symlink: %s" % fullname
               os.path.walk(fullname, self.distro_adder, foo)
+          
+           # I wasn't sure if I was getting a filename path or just the filename
+           # If its just a filename we can change fname back to x and remove the line below
+           fname = os.path.basename(x)
+           
+           # This is where we will search for the kernel and ramdisk
+           if fname.lower() in d_ramdisk:
+              initrd = os.path.join(dirname,x)
+           elif fname in d_kernel:
+              kernel = os.path.join(dirname,x)
 
-           if ( x.startswith("initrd") or x.startswith("ramdisk.image.gz") ) and x != "initrd.size":
-               initrd = os.path.join(dirname,x)
+           
 
-           if ( x.startswith("vmlinu") or x.startswith("kernel.img") or x.startswith("linux") ) and x.find("initrd") == -1:
-               kernel = os.path.join(dirname,x)
+           #print 'initrd = %s' % (initrd)
+           #print 'kernel = %s' % (kernel)
+           #print 'filename = %s' %(x)    
+
            if initrd is not None and kernel is not None and dirname.find("isolinux") == -1:
                adtl = self.add_entry(dirname,kernel,initrd)
                if adtl != None:
                    foo.extend(adtl)
-                   # Not resetting these values causes problems importing debian media because there are remaining items in fnames
+                   # Not resetting these values causes problems 
+                   # importing debian media because there are remaining items in fnames
                    initrd = None
                    kernel = None
    
@@ -542,21 +586,45 @@ class Importer:
        as appropriate and save them.  This includes creating xen and rescue distros/profiles
        if possible.
        """
-
-       proposed_name = self.get_proposed_name(dirname)
-       proposed_arch = self.get_proposed_arch(dirname)
+       # lets just get the name and arch from the importer object if we can
+       importer = import_factory(dirname,self.path)
+       if importer.get_arch():
+           proposed_arch = importer.get_arch()
+       if importer.get_osname:
+           proposed_name = importer.get_osname()
+       
+       else:
+           proposed_name = self.get_proposed_name(dirname)
+           proposed_arch = self.get_proposed_arch(dirname)
+       
+       if self.network_root:
+           kopts = importer.get_kopts(self.network_root)
+       else:
+           kopts = importer.get_kopts(self.mirror)
+            
+           
        if self.arch and proposed_arch and self.arch != proposed_arch:
            raise CX(_("Arch from pathname (%s) does not match with supplied one %s")%(proposed_arch,self.arch))
 
+
        importer = import_factory(dirname,self.path,self.breed)
 
+       
+       if self.breed and self.breed != importer.breed:
+           raise CX( _("Requested breed (%s); breed found is %s") % ( self.breed , breed ) )
+
+
+       
        archs = importer.learn_arch_from_tree()
+
        if not archs:
            if self.arch:
                archs.append( self.arch )
        else:
             if self.arch and self.arch not in archs:
                raise CX(_("Given arch (%s) not found on imported tree %s")%(self.arch,importer.get_pkgdir()))
+
+
        if proposed_arch:
            if archs and proposed_arch not in archs:
                print _("Warning: arch from pathname (%s) not found on imported tree %s") % (proposed_arch,importer.get_pkgdir())
@@ -596,6 +664,7 @@ class Importer:
 
            distro.set_name(name)
            distro.set_kernel(kernel)
+           distro.set_kernel_options(kopts)
            distro.set_initrd(initrd)
            distro.set_arch(pxe_arch)
            distro.set_breed(importer.breed)
@@ -644,8 +713,9 @@ class Importer:
 
            # Create a rescue image as well, if this is not a xen distro
            # but only for red hat profiles
+           # Might hadve to do this for suse as well
 
-           if name.find("-xen") == -1 and importer.breed == "redhat":
+           if name.find("-xen") == -1 and (importer.breed == "redhat" or importer.breed == "suse"):
                rescue_name = 'rescue-' + name
                existing_profile = self.profiles.find(name=rescue_name)
 
@@ -689,11 +759,12 @@ class Importer:
        name = name.replace("-i386","")
 
        # we know that some kernel paths should not be in the name
-
+       #print 'dirname = %s ' % (dirname)
        name = name.replace("-images","")
        name = name.replace("-pxeboot","")  
        name = name.replace("-install","")  
-
+       name = name.replace("boot", "")
+       name = name.replace("loader", "")
        # some paths above the media root may have extra path segments we want
        # to clean up
 
@@ -728,6 +799,8 @@ class Importer:
           return "i386"
        if dirname.find("s390x") != -1:
           return "s390x"
+       if dirname.find("i586") != -1:
+          return "i586"
        if dirname.find("s390") != -1:
           return "s390"
        if dirname.find("ppc64") != -1 or dirname.find("chrp") != -1:
@@ -766,7 +839,8 @@ def guess_breed(kerneldir,path,cli_breed):
        [ 'Server'      , "redhat" ],
        [ 'Client'      , "redhat" ],
        [ 'isolinux.bin', None ],
-    ]
+       [ 'suse'        , "suse" ],
+       ]
     guess = None
 
     while kerneldir != os.path.dirname(path) :
@@ -823,15 +897,18 @@ def import_factory(kerneldir,path,cli_breed):
         breed = cli_breed
 
     if breed == "redhat":
-        return RedHatImporter(rootdir)
+       return RedHatImporter(rootdir)
     elif breed == "debian":
-        return DebianImporter(rootdir)
+       return DebianImporter(rootdir)
     elif breed == "ubuntu":
-        return UbuntuImporter(rootdir)
+       return UbuntuImporter(rootdir)
+    elif breed == "suse":
+       return SuseImporter(rootdir)
     elif breed:
-        raise CX(_("Unknown breed %s")%breed)
+       raise CX(_("Unknown breed %s")%breed)
     else:
-        raise CX(_("No breed given"))
+       raise CX(_("No breed given"))
+
 
 
 class BaseImporter:
@@ -844,7 +921,20 @@ class BaseImporter:
    # FIXME:  Next methods to be moved here: kickstart_finder TRY_LIST loop
 
    # ===================================================================
-
+   arch = None
+   osname = None
+   breed = None
+   datestamp = None
+   ksfile = None
+   os_version = None
+   comment = None
+   kopts = ''
+   
+   def get_kopts(self, dirname):
+       #Kernel options are a space delimited list,
+       # like 'a=b c=d e=f g h i=j' or a hash.
+       # You need to override this method if you plan on having kernel options for your distro
+       return self.kopts
    def arch_walker(self,foo,dirname,fnames):
        """
        See docs on learn_arch_from_tree.
@@ -859,7 +949,7 @@ class BaseImporter:
        for x in fnames:
            if self.match_kernelarch_file(x):
                # print _("- kernel header found: %s") % x
-               for arch in [ "i386" , "x86_64" , "ia64" , "ppc64", "ppc", "s390", "s390x" ]:
+               for arch in [ "i386" , "x86_64" , "ia64" , "ppc64", "ppc", "s390", "s390x", "i586" ]:
                    if x.find(arch) != -1:
                        foo[arch] = 1
                for arch in [ "i686" , "amd64" ]:
@@ -867,7 +957,30 @@ class BaseImporter:
                        foo[arch] = 1
    
    # ===================================================================
+   
+   def get_os_version(self):
+      return self.os_version
 
+   def get_comment(self):
+      return self.comment
+
+   def get_arch(self):
+       # you can either override this function or just set self.arch somewhere within your subclass
+       # You will want to set self.arch as future implementations get the arch this way 
+       return self.arch
+       
+   def get_ksfile(self):
+       # you can either override this function or just set self.ksfile somewhere within your subclass
+       # You will want to set self.ksfile as future implementations get the ksfile this way 
+       
+       return self.ksfile
+   def get_osname(self):
+     # you can either override this function or just set self.osname somewhere within your subclass
+       # You will want to set self.osname as future implementations get the osname this way 
+      
+       return self.osname
+       
+   
    def get_rootdir(self):
        return self.rootdir
    
@@ -892,15 +1005,23 @@ class BaseImporter:
        meaningful name ... so this code helps figure out the arch name.  This is important 
        for producing predictable distro names (and profile names) from differing import sources
        """
+       # You may want to override this function if you don't need it
        result = {}
        # FIXME : this is called only once, should not be a walk      
        if self.get_pkgdir():
            os.path.walk(self.get_pkgdir(), self.arch_walker, result)      
            # print _("- architectures found at %s: %s") % ( self.get_pkgdir(), result.keys() )
+           # just because the packages end with (i686 or i586) we still want to consider them as i386
+           # there is a difference with these numbers but they all run on x86 hardware
        if result.pop("amd64",False):
            result["x86_64"] = 1
-       if result.pop("i686",False):
+        
+       elif result.pop("i686",False):
            result["i386"] = 1
+           
+       elif result.pop("i586", False):
+           result["i386"] = 1
+           
        return result.keys()
 
    def get_datestamp(self):
@@ -920,7 +1041,131 @@ class BaseImporter:
 
 # ===================================================================
 # ===================================================================
-
+class SuseImporter ( BaseImporter ):
+   def __init__(self,(rootdir,pkgdir)):
+      self.breed = "suse"
+      self.rootdir = rootdir
+      self.pkgdir = pkgdir
+      self._set_content_data()
+      self._set_ksfile()
+   
+   def get_kopts(self, dirname):
+       # this tells the autoyast where to get the distro files
+       self.kopts = 'install=%s' % (dirname)
+       return self.kopts
+   def get_arch(self):
+       # since the arch might be i586 we will want to return i386 instead
+       if self.arch == 'i586':
+           return 'i386'
+       else:
+           return self.arch
+       
+   def arch_walker(self,foo,dirname,fnames):
+       # no need to iplement this since I can find the arch with the content file
+       # However, I still need to override it to keep the base.arch_walker from running
+       pass
+       
+   def learn_arch_from_tree(self):
+       # Since I can get the arch from the content file I can just return it here
+       #print "Look I found %s" % (self.arch)
+       if self.arch == 'i586':
+           self.arch = 'i386'
+       
+       return self.get_arch()
+       
+  # ================================================================
+   
+   def _get_content_data(self):
+      # The content file tells everything we ever wanted to know about the 
+      # the suse distro in the rootdir
+      # Get everything except the SHA1 lines in the content file
+     # Key         Content
+    #PRODUCT      Product name
+    #VERSION      Product version
+    #VENDOR       Product vendor
+    #LABEL        Source designation to be used in YaST
+    #ARCH.<base>  Supported architectures for the base architecture
+    #DEFAULTBASE  Default base architecture
+    #DESCRDIR     The directory containing the package descriptions
+    #DATADIR      The directory containing the packages
+      content = {}
+      
+      file = os.path.join(self.get_rootdir(), "content")
+      try:
+         try:
+            cfile = open(file)
+            self.datestamp = float(os.path.getctime(file))
+            for line in cfile.readlines():
+               if line.find('SHA1') !=-1:
+                  # don't care about these lines
+                  continue
+               else:
+                  # {variable: value} format
+                  # just put every line of the content file in the dict
+                  # stuff in the content file is different for each release
+                  data = re.split('\s', line)
+                  variable = data.pop(0)
+                  # remove white spaces although realisticlly we should do this in the regex
+                  sep = ' '
+                  value = ''
+                  value = sep.join(data) 
+                  value.lstrip()
+                  value.rstrip()
+                  content[variable] = value
+                  #print variable + ' = ' + value
+                  
+                  
+         except:
+            print 'Could not open file ' + file
+      finally:
+         cfile.close()
+         
+      
+      return content
+   def _set_content_data(self):
+      
+      content = self._get_content_data()
+    
+      if content.has_key('DEFAULTBASE'):
+         self.arch = content['DEFAULTBASE']
+      elif content.has_key('BASEARCHS'):
+         self.arch = content['BASEARCHS']
+      else:
+         # Could not find an arch
+         self.arch = None
+          
+      # EXample: SHORTLABEL SLES 10 SP2
+      # Example: LABEL openSUSE 11.1
+      
+      if content.has_key('SHORTLABEL'):
+         self.osname = content['SHORTLABEL']
+      elif content.has_key('LABEL'):
+         self.osname = content['LABEL']
+      else:
+         # Could not find an os version
+         self.osname = None
+      
+      
+      # remove all the white spaces
+      self.arch = self.arch.strip()
+      self.osname = self.osname.rstrip()
+      self.osname = self.osname.lstrip()
+      self.osname = self.osname.replace(' ', '-')
+      self.os_version = self.osname
+      self.comment = self.osname
+   def _set_ksfile(self):
+       # suse 9 is so different we cant process here, maybe a contrib script would do 
+      # the trick
+      if self.osname.find('10') !=-1:
+         self.ksfile = '/var/lib/cobbler/kickstarts/autoyast_suse10.ks'
+      elif self.osname.find('11') !=-1:
+         self.ksfile = '/var/lib/cobbler/kickstarts/autoyast_suse11.ks'
+   
+      
+      else:
+         print '- warning: could not use suse distro version'
+         return None
+      
 class RedHatImporter ( BaseImporter ) :
 
    def __init__(self,(rootdir,pkgdir)):
