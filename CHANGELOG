@@ -1,0 +1,747 @@
+Cobbler CHANGELOG
+
+- Mon Mar 7 2009 - 1.7.0
+- Development release start
+- (FEAT) network objects
+- (FEAT) better Ubuntu import support
+- (FEAT) add two new default flags to yum reposync (-m and -d) for grabbing comps automatically and also deleting duplicate RPMs
+- (FEAT) ongoing work contributed to improve Debian and Ubuntu support 
+- (FEAT) ability to toggle virt auto-boot on/off
+- (BUGF) validate gateway input against python-netaddr
+- (FEAT) --kopts="~foo" --in-place can be used to delete a hash entry without affecting the others, not to be confused with "!foo" to supress it.
+
+- XXX - 1.6.3
+- (BUGF) import with datestamp 0 when .discinfo is not found, do not crash
+- (BUGF) various fixes to "cobbler report" when using non-standard formats
+- (BUGF) rename with same name does not delete
+- (BUGF) Fix for traceback when generating DHCP config and the bonding_master interface does not exist.
+
+- Mon Mar 30 2009 - 1.6.2
+- (BUGF) Fix for cache cleanup problem in cobblerd 
+
+- Fri Mar 27 2009 - 1.6.1
+- (FEAT) Improved anaconda monitoring code
+- (FEAT) download comps.xml always (even if yum does not have the option)
+- (FEAT) performance upgrades for cobblerd service to avoid reloads
+- (FEAT) more code for s390 imports (WIP)
+- (BUGF) import works better with rawhide
+- (FEAT) snippet to preserve SSH host keys across reinstalls
+- (FEAT) email trigger to notify when builds finish
+- (FEAT) triggers now are written in Python, old system still exists.
+- (FEAT) s390x zpxe support
+- (BUGF) retry power 5 times before giving up
+- (BUGF) fix for RHEL3 ppc imports
+- (FEAT) use nameserver variable in network config in Anaconda when set
+- (BUGF) sleep 5 seconds between power cycling systems
+- (FEAT) support for /usr/bin/cobbler-register
+- (FEAT) web UI search feature
+- (FEAT) very simple "cobbler hardlink" command to optimize space in /var/www/cobbler
+- (FEAT) new "change" trigger that runs on all adds/edits/removes/syncs
+- (FEAT) an SCM trigger that knows about /var/lib/cobbler kickstarts, snippets, and config directories, and audits them for changes
+- (BUGF) update ctime on object copies
+- (BUGF) fix cobbler check code that makes sure default password is not in use
+- (BUGF) remove duplicate text box for management classes from server edit page
+- (BUGF) fix stderr output on Ctrl+C
+- (BUGF) potential performance savings WRT duplicate python objects
+- (BUGF) don't deserialize during sync, it makes it take twice as long
+- (FEAT) Ubuntu support for import (added/improved)
+- (BUGF) make DHCP managemnet work with bonding
+- (BUGF) teach serializer_catalog to fly with JSON
+- (BUGF) don't use yumdownloader when rpm_list is []
+- (BUGF) fix default kickstart location
+- (BUGF) properly "flatten" environment values for webapp
+- (BUGF) fix for MSIE rendering in web app
+- (BUGF) stop yumdownloader including system yum repos
+- (DOCS) update webui project page link
+- (BUGF) remove caching logic from remote.py
+- (FEAT) added --exclude-dns option to buildiso
+- (BUGF) fix string comparisons to tolerate unicode
+- (BUGF) fix dealing with name servers and name servers search, esp in web app
+
+- Tue Mar 3 2009 - 1.4.3
+- (BUGF) fix OMAPI support's (note: deprecated) usage of subprocess
+- (BUGF) don't traceback on invalid cmd ("cobbler distro list --name=foo")
+- (BUGF) fix import usage with --kickstart option (no more traceback)
+- (BUGF) fix removal of images with child system objects
+- (BUGF) make --rpmlist on repo use same parsing routes as the rest of cobbler
+- (BUGF) default value for server override should be <<inherit>> not <inherit>
+- (BUGF) ensure if virt bridge is set to "" it will apply the value from settings
+- (BUGF) cobbler check should say path to config file is /etc/cobbler, not /var/lib
+- (FEAT) enable cobblerweb username/pass logins when authing with spacewalk
+- (BUGF) allow --kopts to take parameters that are shell quoted.
+- (BUGF) allow kernel options to start with '-'
+- (BUGF) Use shlex for parsing --kopts to allow a wider variety of kernel options
+- (BUGF) prevent potential traceback when --template-file data isn't a hash
+- (BUGF) anaconda doesn't honor nameserver always, set manually
+- (BUGF) various post install network snippet fixes
+- (BUGF) fix OMAPI support's (note: deprecated) usage of subprocess
+- (SPEC) fix build for rawhide now that yaboot is included
+- (BUGF) allow src and noarch arches for repo objects
+- (BUGF) move to PyYAML for YAML implementation since it is better maintained
+- (BUGF) fixed web-interface editing of ownership
+- (BUGF) fixed web-interface editing of management classes
+- (BUGF) don't run full sync in import, sync makes the install system unavailable for very short periods of time
+- (FEAT) XMLRPC functions for searching objects, just like the Python API has
+- (BUGF) make "find repo" CLI command search repos, not systems
+
+- XXX - 1.4.2
+- (BUGF) fix WTI power templates
+- (FEAT) add WTI power type
+- (BUGF) remove Python 2.6/3000 warnings
+- (BUGF) fix typo in network template (DNS enumeration)
+- (BUGF) make buildiso work for systems that are using bonding
+- (BUGF) blending fix for --template-files
+- (BUGF) cobbler check ignores comments in TFTP config
+- (BUGF) fix image type field editing in the webapp
+- (BUGF) allow deletion of eth0 if other interfaces are present
+- (BUGF) fix server-override setting in CLI for profile objects
+- (BUGF) systems and profiles are now sorted for "cobbler buildiso"
+- (BUGF) ensure that directories exist when installing a template file
+- (BUGF) fix for typo in network config snippet
+- (BUGF) fix for func integration script (should overwrite config, not append)
+- (BUGF) append nameservers and gateway, if set, for buildiso 
+
+- Fri Jan 09 2009 - 1.4.1
+- (BUGF) Cobbler check looks for right httpd on SUSE
+- (BUGF) post_install_network_config snippet had bash errors
+- (BUGF) don't run restorecon programatically
+- (FEAT) have cobbler check mention when semanage rules should be applied
+- (BUGF) fix an obscure xmlrpclib corner case where a string that looks like an int can't be served because xmlrpclib thinks it's an int.  Applies to XMLRPC consumers only, not CobblerWeb or the cobbler CLI.
+- (BUGF) fix external kickstart URLs (not templated) and per-system overrides.
+- (BUGF) fix 'cobbler check' code for SuSE services
+- (FEAT) batch editing on the system page.
+
+- Fri Dec 19 2008 - 1.4
+- (----) Stable release of 1.3 development branch
+
+- Fri Dec 19 2008 - 1.3
+- (FEAT) ACLs to extend authz (see Wiki)
+- (FEAT) puppet integration with --mgmt-classes and external nodes URL
+- (FEAT) added puppet external nodes script, cobbler-ext-nodes
+         see https://fedorahosted.org/cobbler/wiki/UsingCobblerWithConfigManagementSystem
+- (FEAT) ability to use --enable-menu=0/1 to hide profiles from the PXE menu, and config setting to change default value for --enable-menu
+- (FEAT) added livecd based physical machine cloner script to "contrib"
+- (FEAT) enable import for debian ISOs and mirrors (1 distro at a time for now)
+- (FEAT) auto-create rescue profile objects
+- (FEAT) included network_config snippet and added --static=0/1 to system objects
+- (FEAT) cobbler report gains additional options for Wiki formatting, csv, and showing only certain fields
+- (FEAT) changed default kernel options to include ksdevice=bootif (not ksdevice=eth0) and added ipappend 2 to PXE
+- (FEAT) distro edits now no longer require a sync to rebuild the PXE menu
+- (BUGF) minor tweak to the blender function to remove a certain class of typing errors where a string is being blended with a list, should not have any noticable effect on existing installs
+- (BUGF) add missing import of "_" in remote.py
+- (FEAT) upgraded webui editing for multiple NICs
+- (FEAT) "template_universe" variable created for snake's usage, variable contains all template variables and is also passed to the template.
+- (FEAT) refactored import with better Debian/Ubuntu support
+- (FEAT) Func integration snippets and new settings
+- (FEAT) settings file and modules.conf now generated by setup.py using templates
+- (FEAT) --template-files makes cobbler more of a full config management system!
+- (FEAT) cobbler reposync now supports --tries=N and --no-fail
+- (FEAT) duplicate hostname prevention, on by default
+- (FEAT) make import work for Scientific Linux
+- (FEAT) distro remove will remove mirrored content when it's safe to do so
+- (FEAT) repo remove will remove mirrored repo content
+- (FEAT) added snippet for better post-install network configuration
+- (BUGF) duplicate repo supression to prevent errors in certain Andaconda's
+- (FEAT) post_network_snippet/interfaces can set up VLANs
+- (FEAT) call unittests with nose, which offers cleaner output, see tests/README
+- (FEAT) update included elilo to 3.8
+- (BUGF) quote append line for elilo
+- (BUGF) added ExcludeArch: ppc64
+- (FEAT) --environment parameter added to reposync
+- (BUGF) have triggers ignore dotfiles so directories can be version controlled (and so on)
+- (FEAT) init scripts and specfiles now install on SuSE
+- (TEST) added remote tests, moved existing unit tests to api.py methods 
+- (FEAT) import can auto assign kickstarts based on distro (feature for beaker)
+- (FEAT) import now saves the dot version of the OS in the comment field
+- (FEAT) import now adds tree build time
+- (FEAT) --comment field added to all objects
+- (FEAT) keep creation and modification times with each object
+- (FEAT) added ppc imports and arches to supplement s390x (and assoc koan chage)
+- (FEAT) added number of interfaces required to each image
+- ~~~ 1.3.2
+- (BUGF) fix for possible import of insecure modules by Cheetah in Cobbler web.
+- (FEAT) new version function
+- (FEAT) misc WUI organization
+- (FEAT) allow auth against multiple LDAP servers
+- (FEAT) replicate now copies image objects
+- (BUGF) replicate now uses higher level API methods to avoid some profile sync errors when distros fail
+- (FEAT) /etc/cobbler/pxe and /etc/cobbler/power are new config file paths
+- (FEAT) /var/lib/cobbler/kickstarts is the new home for kicktart files
+- (FEAT) webui sidebar reorg
+- (FEAT) manage_dhcpd feature (ISC) now checks service status before restarting
+- (BUGF) omapi for manage_dhcp feature (ISC) now defaults to off
+- (FEAT) added module whitelist to settings file
+- (BUGF) don't let the service handler connect to itself over mod_python/proxy, RH 5.3 does not like
+- (FEAT) mtimes and ctimes and uids in the API
+- (FEAT) new functions to get objects based on last modified time, for sync with other apps
+- ~~~ 1.3.3 Test release
+- (FEAT) Python 2.6 specfile changes
+- ~~~ 1.3.X
+- (FEAT) cobbler check output is always logged to /var/log/cobbler/check.log
+- (FEAT) new redhat_register snippet and --redhat-management-key options!
+- (BUGF) SELinux optimizations to symlink/hardlink/chcon/restorecon behavior
+- (----) no SELinux support on EL 4
+- (FEAT) yum_post_install_mirror now on by default
+
+- ??? - 1.2.9
+- (BUGF) do not allow unsafe Cheetah imports
+
+- Wed Oct 15 2008 - 1.2.8
+- (BUGF) make cobbler read /etc/cobbler/settings.py (introduced in 1.2.6)
+
+- Tue Oct 14 2008 - 1.2.7
+- (BUGF) go easier on restrictings when importing subprofiles to prevent load errors
+- (FEAT) added debuginator script to scripts/ (not shipped with RPM)
+
+- Fri Oct 10 2008 - 1.2.6
+- (BUGF) fix image vs system parentage problem affecting cobbler replicate
+- (BUGF) fix restart-services trigger to not restart dns unneccessarily
+- (BUGF) add missing variable newname to signature for remote copy_ functions
+- (BUGF) fix for ownership ownership module when editing kickstarts
+
+- Fri Sep 26 2008 - 1.2.5
+- (BUGF) expose --arch for "cobbler image add"
+- (BUGF) unbreak dnsmasq DHCP management, similar to ISC bug
+- (BUGF) fix --arch for cobbler distro add/edit
+- (BUGF) fix merge error with remote.py's remove_profile function (fix webapp)
+- (BUGF) make keep_updated and mirror_locally checkboxes in WebUI display correctly
+
+- Mon Sep 08 2008 - 1.2.4
+- (BUGF) simple rebuild to remove cli_report.py, which is not in git
+
+- Sun Sep 07 2008 - 1.2.3
+- (BUGF) fix to manage_isc.py code
+
+- Fri Sep 05 2008 - 1.2.2
+- (BUGF) fix to where elilo location is loaded in manage_isc.py
+- (BUGF) populate netboot_enabled in WebUI correctly
+- (BUGF) make RPM own some unowned directories in "triggers"
+- (BUGF) add named_conf setting to settings
+
+- Tue Sep 02 2008 - 1.2.1
+- (BUGF) fix merge problem with 1.2 
+
+- Fri Aug 29 2008 - 1.2.0
+- (FEAT) All development work from 1.X merged in
+- (FEAT) when --netboot-enabled is toggled, rather than deleting the PXE config, create a local boot PXE config
+- (BUGF) disable some s390 aspects of cobbler check until it is supported
+- (FEAT) new --os-version, better validation for --breed, --breed/--os-version also for images
+
+- ??? - 1.1.1
+- (FEAT) make template replacement use regex module
+- (BUGF) remove bootloader check in settings as that code doesn't need it
+- (BUGF) refinements to image handling
+- (FEAT) getks command added to command line
+- (BUGF) don't print traceback during certain SystemExits
+- (BUGF) --help now works more intuitively on odd command line usage
+- (BUGF) use pxesystem for systems, not pxeprofile
+- (FEAT) make Cheetah formatting errors contain help text for users
+- (FEAT) --kopts-post can configure post-install kernel options
+- (BUGF) subtemplates are now errorCatcher Echo compatible
+
+- ??? - 1.1.0
+- devel branch
+- added cobbler aclsetup command for running cobbler as non-root
+- added cobbler find command to do searches from the command line
+- fix mkdir invocation
+- improved cobbler replicate, it now can rsync needed files
+- further templatize ISC dhcp config file (pay attention to /etc/cobbler/dhcp.template.rpmnew !)
+- fix for NFS imported URLs during kickstart generation
+- added yumreposync_flags to settings, default "-l" for use plugins
+- added an extra mkdir for rhn's reposync, though I believe the -l cures it already
+- allow mod python bits to work via non-80 http ports
+- when mirroring repos, act as 686 not 386 to get all the kernel updates
+- upgrades to cobbler buildiso
+- added patch to allow --in-place editing of ksmeta/kopts
+- added patch to allow multiple duplicate kernel options
+- fix kickstart serving when the tree is on NFS
+- s390x import, added support for s390x "pseudo-PXE" trees
+- added support for tracking image objects and virtual ISO images
+- support for multiple copies of the same kernel option in kopts
+- add cobbler bash completion script
+- fix bug with 255 kernel options line warning not firing soon enough
+- add findks.cgi support back as http://server/cblr/svc/op/findks
+- merge patch to surface status over API
+- make yum repos served up for /etc/yum.repos.d fully dynamic (mod_python)
+- cobbler find API calls and command line usage can now use fnmatch (wildcards)
+- return code cleanup (0/1 now more predictable)
+- added comments to /etc/cobbler/modules.conf
+- during import non-xen kernels will default --virt-type to qemu
+- when editing/adding profiles, auto-rebuild the PXE menu
+- added http://cobbler.example.org/cblr/svc/op/list/what/systems (or profiles, etc)
+- in the webui, only show compatible repos when editing a profile
+- refresh cobblerd cache before adding objects
+- system object IP's ok in CIDR notation (AAA.BBB.CCC.DDD/EE) for defining PXE behavior.
+- split partition select template into two parts (old one still ships)
+- cleanup some stock kickstarts so we always use $kickstart_start
+- hook ctrl+c during serializer writes to prevent possible corruption of data in /var/lib/cobbler
+- added 'serializer_catalog' as the new default serializer.  It is backward compatible and much faster.
+- removed serializer_shelve 
+- webui page lookups don't load the full object collection
+- systems can also inherit from images
+- changes to PXE images directly
+- bootloaders is no longer a config file setting
+- we can now look for syslinux in one of two places (/usr/lib, /usr/share)
+- cobbler hardlinks a bit more when it can for /var/www image copies
+- add Xen FV and VMware virt types to WebUI
+
+- Thu Jul 17 2008 - 1.0.4 (tentative)
+- Backported findks.cgi to mod_python, minor mod_python svc handler changes
+
+- Wed Jun 03 2008 - 1.0.3
+- Fix typo in replicate code
+- remove rhpl reference
+- scrub references to manage_*_mode and rewrite the restart-services trigger
+- add new settings to control whether the restart-trigger restarts things
+- yum reposync should also pull i686 kernels, not just i386
+- make cobblerd close file handles
+- fix kickstart serving when the tree is on NFS
+- fix missing reposync createdir (also now in stable branch)
+- add back missing remove_profile/remove_repo
+- remove profile_change support
+
+- Mon Jun 09 2008 - 1.0.2
+- Fix mkdir invocation
+- Fix error message output from failed kickstart rendering
+- manpage edits
+- make buildiso work for SuSE
+
+- Tue Jun 03 2008 - 1.0.1
+- Fix misformatted warning in "check"
+- Do not have RPM own tftpboot, just generate files in TFTP dir as detected
+- Default arches to 'i386' not 'x86' for consistency, esp. in import
+- When querying kickstart templates, do not return directories
+- Make triggers for add/delete work for renames and copies (same triggers)
+- Do not cache snippets so they can be tweaked w/o starting the service
+- Make manpage reference /etc/cobbler/settings, not /var/lib
+- Added manage_forward_zones/manage_reverse_zones to included config file
+- Fix python double-use-of-parameter error
+
+- Mon May 12 2008 - 0.9.2
+- run createrepo with less preconditions during cobbler reposync
+- doc upgrades and error handling for "cobbler replicate"
+- improved error message that occurs when copying from nfs w/ rootsquash
+- mac duplication checking improvements for CLI
+- add warning to cobbler check if selinux is on and Apache boolean not set
+- added warning to cobbler check if templates use the default password
+- setting per-system kickstart template to "" or "delete" restores inheritance
+- if repos in profiles no longer exist, remove noisy warning, move to "check"
+- move warning about reposync to check also (check is more useful at runtime now)
+- build pxe trees for systems even if interface0 is undefined
+- add sync() back into XMLRPC API, missing in 0.9.1
+- added 'distro_name', 'profile_name', and 'system_name' to generated template vars
+- it's now possible to undefine a --ksmeta or kopts symbol defined in a parent with "!foo"
+- log errors while rendering kickstarts
+- comments added to the config file, neat!
+- settings file is now /etc/cobbler/settings
+
+- Fri May 09 2008 - 0.9.1
+- patch to allow yumopts to override gpgcheck
+- applied patch to send hostname from ISC
+- added patch to allow --kopts/--ksmeta items to be cleared with --kopts=delete
+- tftpboot location is now inferred from xinetd config (added for F9 compat)
+- added authn_ldap and stub for authz_configfile
+- authz_configfile allows filtering ldap/other users by config file
+- WebUI now has checkbox on distro/profile for deleting child objects
+- cli has different semantics between "add" and "edit" now for safety reasons
+- cobbler wants to keep IPs/MACs unique now in configuration (can be disabled)
+- added --clobber option to allow add to overwrite existing objects (for scripts)
+- updated/tested kerberos support for those needing to auth against it 
+- update menu.c32 to 3.62 to allow for timeouts during menu (and future submenu)
+- update PXE defaults to invoke menu.c32 automatically w/ timeout
+- removed dependency on rhpl
+- import can now take an --arch (and is recommended usage)
+- now possible to override snippets on a profile/system specific basis
+- provide a different default sample kickstart for imports of F8 and later
+- support for kerberos authentication
+- revamped pre/post install triggers system (triggered via cgi from kickstart wget)
+- logrotate should not send emails to root when restarting services
+- default core (but not repo add) repos to priority 1 (lowest) if using priorities plugin
+- change default authentication to deny_all, xmlrpc_rw_enabled now on by default
+- additional fix for mod_python select box submissions
+- set repo arch if found in the URL and no --arch is specified
+- CGI scripts have been moved under mod_python for speed/consolidation
+- kickstart templates are now evaluated dynamically
+- optional MAC registration is now built-in to requesting kickstarts
+- legacy static file generation from /var/www/cobbler removed
+- implement "cobbler ___ dumpvars --name=X" feature to show template vars
+- validateks now works against all URLs as opposed to rendered local files
+- now possible to create new kickstarts in webui, and delete unused ones
+- support for OMAPI for avoid dhcp restarts
+- support for managing BIND
+- xen kernel (PV) distros do not get added to PXE menus as they won't boot there
+- cobbler buildiso command to build non live ISOs
+- cobbler replicate command
+- added cobbler repo option --mirror-locally to reference external repos without mirroring
+- all virt parameters on profiles can now be overriden on cobbler profile objects
+- added some additional links for kickstart viewing/editing to the web page
+
+- ??? - 0.8.3
+- Make createrepo get run for local cobbler reposync invocations as needed
+- fix WebUI documentation URL
+- fix bug in /etc/cobbler/modules.conf regarding pluggable authn/z
+- fix default flags for yumdownloader
+- fix for RHEL 4u6 DVD/tree import x86_64 arch detection
+- fix for dnsmasq template file host config path
+- fix dnsmasq template to point at the correct hosts file
+- force all names to be alphanumeric
+- all mod python pieces now happy with Unicode output
+
+* Fri Feb 22 2008 - 0.8.2
+- fix to webui to allow repos to be edited there on profile page
+- disable local socket XMLRPC as nothing is using it.
+- fixed findks.cgi so it supports multiple NICs
+- import now supports both --path and --mirror as aliases, as before
+- added change_profile.cgi for changing profiles from CGI
+- added register_mac.cgi
+
+* Wed Feb 20 2008 - 0.8.1
+- bugfix in reposync code
+- don't print tracebacks on SystemExit from optparse
+- manpage tweaks
+
+* Fri Feb 15 2008 - 0.8.0 (TBD)
+- stable release of 0.7.* branch plus ...
+- fixed potential user problem with source_repos in upgrade scenario
+- additional higher level API functions for find, fixes for other higher level API functions
+- better messaging when insufficient permissions on needed files
+- update permissions on reposync fixes
+
+* Thu Jan 31 2008 - 0.7.2 (0.8 rc)
+- default_virt_file_size and default_virt_ram added to settings
+- enforce permissions/selinux context after reposync
+- better API for copying/renames, API consistancy cleanup
+- support for renames that resolve dependencies, inclusion in CLI+webapp
+- remove leading newline in rendered template files, which apparently breaks AutoYAST?
+- recursive syncs automatically sync all subobjects when editing parent objects (default behavior)
+- deletes can now be done recursively (optional --recursive on distro/profile remove)
+- 'cobbler list' is now (re)sorted
+
+* Wed Jan 09 2008 - 0.7.1
+- allow imports to force usage of a specific kickstart template with --kickstart
+- added --yumopts parameter to repos (works just like --kopts/--ksmeta)
+- minor doc fixes
+- fix for name of F8 comps.xml file
+- added option --rsync-flags to import command
+- added http_port to settings to run Apache on non-80
+- rsync during createrepo now keeps filesystem permissions/groups
+- ...
+
+* Mon Dec 10 2007 - 0.7.0
+- Testing branch
+- Fix bug related to <<inherit>> and kickstart args 
+- Make CLI functions modular and use optparse
+- Quote wget args to avoid creating stray files on target system
+- Support Xen FV as virt type (requires F8+)
+- Implemented fully pluggable authn/authz system
+- WebUI is now mod_python based
+- Greatly enhanced logging (goes to /var/log/cobbler/cobbler.log)
+- ...
+
+* Wed Nov 14 2007 - 0.6.4
+- Changed permissions of auth.conf
+- Fixes for working with rhn_yum_plugin
+- still allow repo configuration for distro repos that have just 1 repo (like C5.1)
+- disable CGI weblogging by default (backend logging TBA)
+- fix WebUI handling of keep_updated (repo field) and netboot_enabled (system field)
+- disable the blender_cache as it's running afoul of the sync code
+- update htaccess file to only authenticate the webui, not nopxe.cgi and findks.cgi
+
+* Wed Nov 07 2007 - 0.6.3
+- Be able to define and use Multiple NICs per system
+- Add --virt-cpus to profile editing
+- Fix bug where WUI (XMLRPC) auth wasn't supported on EL4
+- Add --virt-bridge to profile editing and NICs
+- Added serializer_shelve (as option) for added performance/persistance over YAML, experimental in /etc/cobbler/modules.conf, see Wiki
+- Backup state files and migrate state structures upon RPM upgrade
+- Added some more redundant files (for unsupported distros) to the rsync.exclude file
+- added pre-sync and post-sync triggers, service restarts are now handled by /var/lib/cobbler/triggers
+- webui now uses htaccess (see manpage and Wiki for setup instructions)
+- added pagination to the WUI to keep pages from growing overly long
+- added --server-override parameter for help with multi-subnet configurations (also see Wiki)
+- removed yum-utils as a hard requirement, cobbler check now looks for yum-utils
+- fixed bug where cobbler would try to copy hardlinks to themselves during sync
+- misc random bugfixing
+
+* Fri Sep 28 2007 - 0.6.2
+- cobbler repo auto-add to discover yum repos automatically
+- fix bug that allows empty mac addresses (None) in dhcpd.conf
+- kickstarts automatically save kickstart file used to /root/cobbler.ks
+- allow multiple (comma-seperated) values for --virt-size
+- removed deprecated 'enchant' function (use SSH and koan instead)
+- cleanup of a few unused settings
+- allow for serialization modules to be selected in /etc/cobbler/modules.conf
+- patch to allow for reposync of specific repos, even if not set to update
+- added --dhcp-tag section for better DHCP customization (esp with multiple subnets)
+- added Apache proxying around XMLRPC port for wider network access
+- refactor XMLRPC API and establish a read-write API
+- allow for configuring of read-write XMLRPC users in /etc/cobbler/auth.conf
+- WebUI
+- packaged /var/lib/cobbler/settings as a config file
+- added BuildRequires to help build on other platforms
+- relocate cgi-bin files to cgi-bin/cobbler for namespacing
+- fix syslog logging for systems not in the cobbler DB.
+- fix bug in which non-lowercase intermediate objects could be deleted 
+ 
+* Thu Aug 30 2007 - 0.6.1
+- re enable --resolve in yumdownloader (cobbler repo mgmt feature)
+- fix get_distros_for_koan API function in cobblerd (not used by koan)
+- allow find API to search by arbitrary fields
+- status and logging now shows system names
+- upgraded init scripts
+- zeroconf/avahi publishing for cobblerd service
+- logRequests = 0 for XMLRPC.  Make it be quiet.
+- ignore subdirectories of /var/lib/cobbler/snippets
+- fixed bug in graph rendering that allowed for upward property propogation in some cases
+- fixed bug that did not correctly evaluate repository settings of inherited sub-profiles/objects
+- tweaked domU sample kickstart to include wget
+- added some more unit tests
+- fix typo down one error path in cobbler sync.
+- fix reposync handling when using rsync protocol and directory paths do not contain arch
+- allow basic usage of Cheetah variables in config files @@server@@, etc.
+- fix auto-repo attachment for distros with split trees (i.e. RHEL5)
+
+* Thu Aug 09 2007 - 0.6.0 
+- bugfix in error path in "cobbler check"
+- stable release for 0.5.x
+
+* Thu Jul 26 2007 - 0.5.2 (RC)
+- Have cobbler check ensure services are started
+- Add cobbler validateks command to look for broken rendered kickstarts
+- Added -v/--version
+- Added SNIPPET::foo capability to pull /var/lib/cobbler/snippets/foo into templates (anywhere)
+- Import can now take an --available-as=nfs://server:/mount/point to do cobbler import without mirroring
+- Feature to enable "pxe_just_once" for boot loop prevention
+
+* Fri Jul 20 2007 - 0.5.1
+- Added logging for cobblerd -- /var/log/cobbler/cobblerd.log
+- Cobblerd now ignores XMLRPC IOError
+- Added findks.cgi
+- Misc bugfixing
+- Added --virt-path, --virt-type
+
+* Wed Jun 24 2007 - 0.5.0
+- Remove hardcode of /var/www/cobbler in cobblerd
+- Improve various warning warning messages
+- cobbler (objecttype) (objectname) now gives info about the object instead of just all objects
+- Added --hostname to "cobbler system add", --ip-address (or --ip) is also a better alias for the misnamed --pxe-address
+- Optionally use dnsmasq for DHCP (and DNS!) instead of ISC dhcpd.
+- Add --mac and remove requirement for --name to be an ip, mac, or hostname.
+- Manpage cleanup
+- Patch to allow pre and post triggers
+- Patch to allow --createrepo-flags and to cache on import, fix multiple calls to createrepo
+- Various modifications to allow for profile inheritance
+- All variables in object tree now available for use in templating, nicer blending algorithms
+- Optional override of --kickstart in system object
+
+* Thu Apr 26 2007 - 0.4.8
+- Make import friendlier for older distros
+- Make import friendlier for newer createrepos that don't have --basedir
+
+* Fri Apr 20 2007 - 0.4.7
+- Disable mod_python tracker piece for RHEL5 (replacement eventual).
+- Kickstart tracking now understands Apache logs
+- Added support for --rpm-list parameter to "repo add" for download of partial content from repositories
+  (ex: cobbler and koan from FC6extras, w/o games).
+- More consistant naming on imports, regardless of data source.
+- Teach cobbler to remove .olddata dirs, which can happen if createrepo crashes or is killed mid-process
+- Default yum_core_repos_from_server to 0 
+- Implemented triggers for add/delete commands
+- BootAPI and Config object classes are now Borg patterned to prevent duplication of config info from the API.
+- cobbler_syslogd -> cobblerd, now has XMLRPC component for koan >= 0.2.9 clients.  Old clients still work.
+- Make cobbler_import work for Centos 5
+- Removed requirements on what files that are parameters to --kernel and --initrd must be named.
+- Added support for "rename", "copy", and "edit" commands -- before there just was "add" and "remove"
+
+* Thu Apr 05 2007 - 0.4.6
+- Bind cobbler_syslogd to all addresses
+- Store repos as list, not string
+- Fix traceback in cobbler_sync with older configurations (pre-kickstart tracking)
+- Make cobbler import feature better understand older RHEL and in-between builds of Fedora.
+- Make cobbler repo add/reposync understand http://, ftp://, and some limited support for RHN.
+- Add settings parameter to toggle core repo mirror behavior on/off.
+- Manpage cleanup.
+
+* Fri Mar 23 2007 - 0.4.5
+- Removed legacy --virt-name parameter, requires koan upgrade to 0.2.8
+
+* Fri Mar 23 2007 - 0.4.4
+- Generate PXE configuration files from templates in /etc/cobbler to be more customizable
+- Fix bug with wrong kickstart metadata being used for import
+- Fix bug with argument parsing for --repos
+- Much cleaner distro/profile names with --import
+- For import, the "tree" parameter is now attached to the distro, not the profile
+- Add "links" directory in webdir for symlinking to full kickstart tree paths.
+- Misc tweaks to shorten kernel parameter length
+- Giving invalid arguments to "report" will show an error message
+- Distros, Profiles, and System names are now case insensitive.
+
+* Wed Feb 28 2007 - 0.4.3
+- Added netboot_enabled option for systems to control install loops in programmatic context.
+- Disabling anchors in YAML serialization (which make files harder to edit)
+- Fix bug in ksmeta argument processing, takes whitespace again, not commas
+- Fix bug in old-style deserialization with str and int concatenation
+
+* Mon Feb 19 2007 - 0.4.2
+- Fix bug in "cobbler system remove"
+
+* Mon Feb 19 2007 - 0.4.1
+- Bundle menu.c32 for older distros
+- Unbundle Cheetah as it's available at http://www.python.org/pyvault/centos-4-i386/
+
+* Mon Feb 19 2007 - 0.4.0
+- Added feature to minimize the need to run "cobbler sync" for add commands
+  Now only need to run sync when files change behind the scenes or when
+  manually editing YAML
+- Moving back to Cheetah for templating (old kickstarts should escape $ with \$)
+- PXE menus for the default profile.  Type "menu" at the prompt to get a menu, or wait for local boot.
+- Manpage cleanup and clarification
+- Bugfix: cobbler will no longer create repo files on remotes when --local-filename is not used for "repo add"
+
+* Mon Jan 28 2007 - 0.3.9
+- Make init scripts correspond with FC-E guidelines
+
+* Thu Jan 24 2007 - 0.3.8
+- Fixed minor bug in logfile processing related to 0.3.7
+
+* Thu Jan 24 2007 - 0.3.7
+- Default/examples kickstarts are now fully automatic (added hd type/size detection).
+- Kickstart tracking now includes remote syslog support, just run "cobbler sync" to enable.
+- "cobbler status" command improved to include syslog info/times.
+- Added fc6 kickstart file that was left out of the RPM earlier
+- Added mini domU kickstart
+- bugfix: don't install mod_python watcher on older Apache installs (like RHEL4) as it
+  somehow corrupts downloads on older copies.  kickstart tracking by syslog still works
+  on those platforms.  (This only applies to the cobbler server, not clients).
+
+* Thu Dec 21 2006 - 0.3.6
+- locking feature now enabled
+- "enchant" now supports provisioning virtual images remotely when using --is-virt=yes
+- cobbler no longer restarts httpd if the config file already exists.
+- "cobbler repo sync" is now an alias for "cobbler reposync"
+- "cobbler list --something" can now be invoked as "cobbler something list"
+- "cobbler list" just shows names of items now
+- "cobbler report" is now used for showing full information output
+- "list" (as well as report) are now sorted alphabetically
+- basic kickstart tracking feature. requests on /var/www/cobbler get logged to /var/log/cobbler.
+
+* Wed Dec 20 2006 - 0.3.5
+- Fixed bug in cobbler import related to orphan detection
+- Made default rsync.exclude more strict (OO langpacks and KDE translation)
+- Now runs createrepo during "cobbler import" to build more correct repodata
+- Added additional repo mirroring commands:  "cobbler repo add", etc
+- Documentation on repo mirroring features.
+- fix bug in rsync:// import code that saved distributions in the wrong path
+- The --dryrun option on "cobbler sync" is now unsupported.
+- Fixed bug in virt specific profile information not being used with koan
+- import now takes --name in addition to --mirror-name to be more consistant
+- rsync repo import shouldn't assume SSH unless no rsync:// in mirror URL
+- strict host key checking disabled for "cobbler enchant" feature
+
+* Mon Dec 05 2006 - 0.3.4
+- Don't rsync PPC content or ISO's on cobbler import
+- Manpage cleanup
+
+* Tue Nov 14 2006 - 0.3.3
+- During "cobbler sync" only PXE-related directories in /tftpboot
+  are deleted.  This allows /tftpboot to be used for other
+  purposes.
+
+* Thr Oct 25 2006 - 0.3.2
+- By default, boot and install in text mode
+
+* Wed Oct 25 2006 - 0.3.1
+- The app now refers to "virt" in many places instead of "xen".
+  It's been coded such that files will migrate forward without
+  any major issues, and the newer version of koan can still hit
+  older releases (for now).  The CLI still takes the --xen options
+  as well as the new --virt options, as they are aliased.  The API
+  now exclusively just uses methods with "virt" in them, however.
+- ...
+
+* Tue Oct 24 2006 - 0.3.0
+- Reload httpd during sync
+- New profiles without set kickstarts default to /etc/cobbler/default.ks
+  though this can be changed in /var/lib/cobbler/settings
+- Better forward upgrades for /var/lib/cobbler/settings.  New entries
+  get added when they are referenced.
+
+* Tue Oct 24 2006 - 0.2.9
+- Bug fix, enchant now detects if koan_path is not set
+- import now can do ssh rsync as well as just rsyncd
+- Misc bug fixes related to not choking on bad info
+- Fixed bug where --pxe-address wasn't surfaced
+- Sync is a little less verbose
+
+* Wed Oct 18 2006 - 0.2.8
+- Performance speedups to "import" command
+- Bug fix, imported paths (again) convert slashes to underscores
+
+* Tue Oct 17 2006 - 0.2.7
+- Removed pexpect to enhance support for other distros
+- enchant syntax changed (see NEWS)
+- now builds on RHEL4
+
+* Tue Oct 17 2006 - 0.2.6
+- Removing Cheetah and replacing w/ simpler templating system
+- Don't delete localmirror on sync
+
+* Mon Oct 16 2006 - 0.2.5
+- New "import" feature for rsync:// mirrors and filesystem directories
+- Manpage clarification
+- "enchant" is now a subcommand of "cobbler system" and takes less arguments.
+- Several random bugfixes (mainly along error paths)
+
+* Wed Oct 11 2006 - 0.2.4
+- Changes to make things work with python 2.3 (RHEL4, etc)
+- Updated YAML code to ensure better backward compatibility
+
+* Mon Oct 9 2006 - 0.2.3
+- Cobbler now creates a profile and system listing (YAML) in /var needed
+  by the next version of koan (which will be 0.2.1)
+- bugfix: enchant should reboot the target box
+- bugfix: enchant should fail if path to koan isn't configured
+
+* Fri Oct 6 2006 - 0.2.2
+- bugfix: "--pxe-hostname" made available in CLI and renamed as "--pxe-address"
+- workaround: elilo doesn't do MAC address pxe config files, use IP for ia64
+- bugfix: added next-server line for per-MAC dhcp configs
+- bugfix: fixed manpage errors
+
+* Thu Sep 28 2006 - 0.2.1
+- New ability to "enchant" remote systems (see NEWS)
+- Misc. bugfixes
+
+* Fri Sep 22 2006 - 0.2.0
+- New dhcp.d conf management features (see NEWS)
+- IA64 support (see NEWS)
+- dhcpd.conf MAC & hostname association features
+
+* Thu Sep 21 2006 - 0.1.1-8
+- (RPM) Added doc files to doc section, removed INSTALLED_FILES
+
+* Wed Sep 20 2006 - 0.1.1-7
+- Split HTTP and TFTP content to seperate directories
+  to enable running in SELinux targetted/enforcing mode.
+- Make the Virt MAC address a property of a system, not a profile
+- Misc. fixes, mainly along the error path
+
+* Fri Sep 15 2006 - 0.1.1-6
+- Make koan own it's directory, add GPL "COPYING" file.
+
+* Wed Aug 16 2006 - 0.1.1-5
+- Spec file tweaks only for FC-Extras
+
+* Thu Jul 20 2006 - 0.1.1-4
+- Fixed python import paths in yaml code, which errantly assumed yaml was installed as a module.
+
+* Wed Jul 12 2006 - 0.1.1-3
+- Added templating support using Cheetah
+
+* Thu Jul 9 2006 - 0.1.0-2
+- Fedora-Extras rpm spec tweaks
+
+* Tue Jun 28 2006 - 0.1.0-1
+- rpm genesis
+
+
